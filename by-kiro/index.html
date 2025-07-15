@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conway's Game of Life</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f0f0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 100vw;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 40px);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            flex-shrink: 0;
+        }
+
+        .game-area {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-width: 0;
+            min-height: 0;
+        }
+
+        #gameCanvas {
+            border: 2px solid #333;
+            cursor: pointer;
+            background-color: white;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .controls-panel {
+            flex: 0 0 300px;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group h3 {
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            flex: 1;
+            min-width: 80px;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #1e7e34;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .slider-container label {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #007bff;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #007bff;
+            cursor: pointer;
+            border: none;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .input-group label {
+            font-weight: bold;
+            color: #495057;
+            min-width: 40px;
+        }
+
+        input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 80px;
+        }
+
+        .info-display {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .info-display .generation {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 5px;
+        }
+
+        .info-display .speed {
+            font-size: 1em;
+            color: #6c757d;
+        }
+
+        #messageArea {
+            display: none;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .game-area {
+                flex-direction: column;
+            }
+            
+            .canvas-container {
+                min-width: auto;
+            }
+            
+            .controls-panel {
+                flex: none;
+            }
+            
+            #gameCanvas {
+                max-width: 100%;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Conway's Game of Life</h1>
+        
+        <div class="game-area">
+            <div class="canvas-container">
+                <canvas id="gameCanvas" width="600" height="400"></canvas>
+            </div>
+            
+            <div class="controls-panel">
+                <div class="control-group">
+                    <h3>シミュレーション制御</h3>
+                    <div class="button-group">
+                        <button id="startBtn" class="btn-success">開始</button>
+                        <button id="stopBtn" class="btn-secondary" disabled>停止</button>
+                    </div>
+                    <div class="button-group" style="margin-top: 10px;">
+                        <button id="stepBtn" class="btn-primary">1ステップ</button>
+                        <button id="clearBtn" class="btn-danger">クリア</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>速度調整</h3>
+                    <div class="slider-container">
+                        <label for="speedSlider">速度: <span id="speedValue">50ms</span></label>
+                        <input type="range" id="speedSlider" min="10" max="2000" value="50" step="10">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>グリッドサイズ</h3>
+                    <div class="input-group">
+                        <label for="widthInput">幅:</label>
+                        <input type="number" id="widthInput" min="10" max="150" value="50">
+                    </div>
+                    <div class="input-group" style="margin-top: 10px;">
+                        <label for="heightInput">高さ:</label>
+                        <input type="number" id="heightInput" min="10" max="150" value="30">
+                    </div>
+                    <button id="resizeBtn" class="btn-primary" style="margin-top: 10px; width: 100%;">サイズ変更</button>
+                </div>
+
+                <div class="control-group">
+                    <h3>サンプルパターン</h3>
+                    <div class="button-group">
+                        <button id="gliderBtn" class="btn-primary">グライダー</button>
+                        <button id="pentominoBtn" class="btn-primary">Rペントミノ</button>
+                    </div>
+                    <div class="button-group" style="margin-top: 10px;">
+                        <button id="acornBtn" class="btn-primary">エイコーン</button>
+                        <button id="gosperGunBtn" class="btn-primary">グライダー銃</button>
+                    </div>
+                    <div class="button-group" style="margin-top: 10px;">
+                        <button id="pulsarBtn" class="btn-primary">パルサー</button>
+                        <button id="pentadecathlonBtn" class="btn-primary">ペンタデカスロン</button>
+                    </div>
+                    <div class="button-group" style="margin-top: 10px;">
+                        <button id="dieHardBtn" class="btn-primary">ダイハード</button>
+                        <button id="randomBtn" class="btn-primary">ランダム</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="info-display">
+                        <div class="generation">世代: <span id="generationCount">0</span></div>
+                        <div class="speed">更新間隔: <span id="currentSpeed">500ms</span></div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div id="messageArea"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Cell class
+        class Cell {
+            constructor(alive = false) {
+                this.alive = alive;
+            }
+            isAlive() { return this.alive; }
+            setAlive(alive) { this.alive = Boolean(alive); }
+            toggle() { this.alive = !this.alive; }
+        }
+
+        // GameGrid class
+        class GameGrid {
+            constructor(width, height) {
+                this.width = width;
+                this.height = height;
+                this.grid = [];
+                this.initializeGrid();
+            }
+
+            initializeGrid() {
+                for (let y = 0; y < this.height; y++) {
+                    this.grid[y] = [];
+                    for (let x = 0; x < this.width; x++) {
+                        this.grid[y][x] = new Cell(false);
+                    }
+                }
+            }
+
+            getCell(x, y) {
+                if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
+                    return new Cell(false);
+                }
+                return this.grid[y][x];
+            }
+
+            setCell(x, y, alive) {
+                if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
+                    this.grid[y][x].setAlive(alive);
+                }
+            }
+
+            toggleCell(x, y) {
+                if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
+                    this.grid[y][x].toggle();
+                }
+            }
+
+            countNeighbors(x, y) {
+                let count = 0;
+                const directions = [
+                    [-1, -1], [-1, 0], [-1, 1],
+                    [ 0, -1],          [ 0, 1],
+                    [ 1, -1], [ 1, 0], [ 1, 1]
+                ];
+
+                for (const [dx, dy] of directions) {
+                    const neighborX = (x + dx + this.width) % this.width;
+                    const neighborY = (y + dy + this.height) % this.height;
+                    if (this.grid[neighborY][neighborX].isAlive()) {
+                        count++;
+                    }
+                }
+                return count;
+            }
+
+            nextGeneration() {
+                const newGrid = [];
+                for (let y = 0; y < this.height; y++) {
+                    newGrid[y] = [];
+                    for (let x = 0; x < this.width; x++) {
+                        const currentCell = this.grid[y][x];
+                        const neighborCount = this.countNeighbors(x, y);
+                        const newCell = new Cell();
+
+                        if (currentCell.isAlive()) {
+                            if (neighborCount === 2 || neighborCount === 3) {
+                                newCell.setAlive(true);
+                            }
+                        } else {
+                            if (neighborCount === 3) {
+                                newCell.setAlive(true);
+                            }
+                        }
+                        newGrid[y][x] = newCell;
+                    }
+                }
+                this.grid = newGrid;
+            }
+
+            clear() {
+                for (let y = 0; y < this.height; y++) {
+                    for (let x = 0; x < this.width; x++) {
+                        this.grid[y][x].setAlive(false);
+                    }
+                }
+            }
+
+            resize(width, height) {
+                this.width = width;
+                this.height = height;
+                this.initializeGrid();
+            }
+        }
+
+        // GameRenderer class
+        class GameRenderer {
+            constructor(canvas, grid) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.grid = grid;
+                this.cellSize = 0;
+                this.calculateCellSize();
+            }
+
+            calculateCellSize() {
+                const container = this.canvas.parentElement;
+                const containerRect = container.getBoundingClientRect();
+                
+                const availableWidth = containerRect.width - 4;
+                const availableHeight = containerRect.height - 4;
+                
+                const cellSizeByWidth = Math.floor(availableWidth / this.grid.width);
+                const cellSizeByHeight = Math.floor(availableHeight / this.grid.height);
+                
+                this.cellSize = Math.min(cellSizeByWidth, cellSizeByHeight);
+                
+                if (this.cellSize < 1) {
+                    this.cellSize = 1;
+                }
+                
+                const newCanvasWidth = this.grid.width * this.cellSize;
+                const newCanvasHeight = this.grid.height * this.cellSize;
+                
+                if (this.canvas.width !== newCanvasWidth || this.canvas.height !== newCanvasHeight) {
+                    this.canvas.width = newCanvasWidth;
+                    this.canvas.height = newCanvasHeight;
+                }
+            }
+
+            render() {
+                this.calculateCellSize();
+                this.clearCanvas();
+                this.drawGrid();
+                this.drawCells();
+            }
+
+            clearCanvas() {
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+
+            drawGrid() {
+                if (this.cellSize <= 2) {
+                    return;
+                } else if (this.cellSize <= 4) {
+                    this.ctx.strokeStyle = '#f0f0f0';
+                    this.ctx.lineWidth = 0.5;
+                } else if (this.cellSize <= 8) {
+                    this.ctx.strokeStyle = '#e0e0e0';
+                    this.ctx.lineWidth = 0.5;
+                } else {
+                    this.ctx.strokeStyle = '#d0d0d0';
+                    this.ctx.lineWidth = 1;
+                }
+
+                const skipLines = this.cellSize < 3 ? Math.max(1, Math.floor(this.grid.width / 100)) : 1;
+
+                for (let x = 0; x <= this.grid.width; x += skipLines) {
+                    const xPos = x * this.cellSize;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(xPos, 0);
+                    this.ctx.lineTo(xPos, this.grid.height * this.cellSize);
+                    this.ctx.stroke();
+                }
+
+                for (let y = 0; y <= this.grid.height; y += skipLines) {
+                    const yPos = y * this.cellSize;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, yPos);
+                    this.ctx.lineTo(this.grid.width * this.cellSize, yPos);
+                    this.ctx.stroke();
+                }
+            }
+
+            drawCells() {
+                for (let y = 0; y < this.grid.height; y++) {
+                    for (let x = 0; x < this.grid.width; x++) {
+                        this.renderCell(x, y);
+                    }
+                }
+            }
+
+            renderCell(x, y) {
+                const cell = this.grid.getCell(x, y);
+                const xPos = x * this.cellSize;
+                const yPos = y * this.cellSize;
+
+                if (cell.isAlive()) {
+                    this.ctx.fillStyle = '#000000';
+                } else {
+                    this.ctx.fillStyle = '#ffffff';
+                }
+
+                this.ctx.fillRect(xPos + 1, yPos + 1, this.cellSize - 1, this.cellSize - 1);
+            }
+
+            getGridCoordinates(event) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+                const gridX = Math.floor(x / this.cellSize);
+                const gridY = Math.floor(y / this.cellSize);
+                
+                return {
+                    x: gridX,
+                    y: gridY,
+                    valid: gridX >= 0 && gridX < this.grid.width && gridY >= 0 && gridY < this.grid.height
+                };
+            }
+
+            setupMouseHandling() {
+                let isDragging = false;
+                let dragState = null;
+                let lastCoords = null;
+
+                this.canvas.addEventListener('mousedown', (event) => {
+                    event.preventDefault();
+                    isDragging = true;
+                    const coords = this.getGridCoordinates(event);
+                    
+                    if (coords.valid) {
+                        const currentCell = this.grid.getCell(coords.x, coords.y);
+                        const newState = !currentCell.isAlive();
+                        
+                        this.grid.setCell(coords.x, coords.y, newState);
+                        this.renderCell(coords.x, coords.y);
+                        
+                        dragState = newState;
+                        lastCoords = coords;
+                    }
+                });
+
+                this.canvas.addEventListener('mousemove', (event) => {
+                    if (isDragging && dragState !== null) {
+                        const coords = this.getGridCoordinates(event);
+                        
+                        if (coords.valid && 
+                            (!lastCoords || coords.x !== lastCoords.x || coords.y !== lastCoords.y)) {
+                            
+                            this.grid.setCell(coords.x, coords.y, dragState);
+                            this.renderCell(coords.x, coords.y);
+                            lastCoords = coords;
+                        }
+                    }
+                });
+
+                this.canvas.addEventListener('mouseup', () => {
+                    isDragging = false;
+                    dragState = null;
+                    lastCoords = null;
+                });
+
+                this.canvas.addEventListener('mouseleave', () => {
+                    isDragging = false;
+                    dragState = null;
+                    lastCoords = null;
+                });
+
+                this.canvas.addEventListener('contextmenu', (event) => {
+                    event.preventDefault();
+                });
+
+                this.setupTouchHandling();
+            }
+
+            setupTouchHandling() {
+                let isTouching = false;
+                let touchState = null;
+
+                this.canvas.addEventListener('touchstart', (event) => {
+                    event.preventDefault();
+                    isTouching = true;
+                    
+                    const touch = event.touches[0];
+                    const mouseEvent = {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY
+                    };
+                    
+                    const coords = this.getGridCoordinates(mouseEvent);
+                    if (coords.valid) {
+                        const currentCell = this.grid.getCell(coords.x, coords.y);
+                        const newState = !currentCell.isAlive();
+                        
+                        this.grid.setCell(coords.x, coords.y, newState);
+                        this.renderCell(coords.x, coords.y);
+                        touchState = newState;
+                    }
+                });
+
+                this.canvas.addEventListener('touchmove', (event) => {
+                    event.preventDefault();
+                    if (isTouching && touchState !== null) {
+                        const touch = event.touches[0];
+                        const mouseEvent = {
+                            clientX: touch.clientX,
+                            clientY: touch.clientY
+                        };
+                        
+                        const coords = this.getGridCoordinates(mouseEvent);
+                        if (coords.valid) {
+                            this.grid.setCell(coords.x, coords.y, touchState);
+                            this.renderCell(coords.x, coords.y);
+                        }
+                    }
+                });
+
+                this.canvas.addEventListener('touchend', (event) => {
+                    event.preventDefault();
+                    isTouching = false;
+                    touchState = null;
+                });
+            }
+
+            updateGrid(newGrid) {
+                this.grid = newGrid;
+                this.render();
+            }
+        }
+
+        // Game Controller
+        class GameController {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.grid = new GameGrid(50, 30);
+                this.renderer = new GameRenderer(this.canvas, this.grid);
+                this.isRunning = false;
+                this.generation = 0;
+                this.speed = 50;
+                this.intervalId = null;
+                
+                this.renderer.setupMouseHandling();
+                this.renderer.render();
+                this.setupUI();
+                this.loadGlider();
+            }
+
+            setupUI() {
+                // ボタンイベント
+                document.getElementById('startBtn').addEventListener('click', () => this.start());
+                document.getElementById('stopBtn').addEventListener('click', () => this.stop());
+                document.getElementById('stepBtn').addEventListener('click', () => this.step());
+                document.getElementById('clearBtn').addEventListener('click', () => this.clear());
+                
+                // 速度スライダー
+                const speedSlider = document.getElementById('speedSlider');
+                speedSlider.addEventListener('input', (event) => {
+                    this.setSpeed(parseInt(event.target.value));
+                });
+
+                // グリッドサイズ変更
+                document.getElementById('resizeBtn').addEventListener('click', () => {
+                    const width = parseInt(document.getElementById('widthInput').value);
+                    const height = parseInt(document.getElementById('heightInput').value);
+                    this.resizeGrid(width, height);
+                });
+
+                // サンプルパターンボタン
+                document.getElementById('gliderBtn').addEventListener('click', () => this.loadGlider());
+                document.getElementById('pentominoBtn').addEventListener('click', () => this.loadRPentomino());
+                document.getElementById('acornBtn').addEventListener('click', () => this.loadAcorn());
+                document.getElementById('gosperGunBtn').addEventListener('click', () => this.loadGosperGun());
+                document.getElementById('pulsarBtn').addEventListener('click', () => this.loadPulsar());
+                document.getElementById('pentadecathlonBtn').addEventListener('click', () => this.loadPentadecathlon());
+                document.getElementById('dieHardBtn').addEventListener('click', () => this.loadDieHard());
+                document.getElementById('randomBtn').addEventListener('click', () => this.loadRandom());
+
+                // キーボードショートカット
+                document.addEventListener('keydown', (event) => {
+                    if (event.target.tagName !== 'INPUT') {
+                        switch (event.key.toLowerCase()) {
+                            case ' ':
+                                event.preventDefault();
+                                if (this.isRunning) {
+                                    this.stop();
+                                } else {
+                                    this.start();
+                                }
+                                break;
+                            case 's':
+                                event.preventDefault();
+                                this.step();
+                                break;
+                            case 'c':
+                                event.preventDefault();
+                                this.clear();
+                                break;
+                        }
+                    }
+                });
+            }
+
+            start() {
+                if (!this.isRunning) {
+                    this.isRunning = true;
+                    this.intervalId = setInterval(() => {
+                        this.step();
+                    }, this.speed);
+                    this.updateButtons();
+                }
+            }
+
+            stop() {
+                if (this.isRunning) {
+                    this.isRunning = false;
+                    clearInterval(this.intervalId);
+                    this.updateButtons();
+                }
+            }
+
+            step() {
+                this.grid.nextGeneration();
+                this.generation++;
+                this.renderer.render();
+                this.updateDisplay();
+            }
+
+            clear() {
+                const wasRunning = this.isRunning;
+                if (wasRunning) this.stop();
+                
+                this.grid.clear();
+                this.generation = 0;
+                this.renderer.render();
+                this.updateDisplay();
+                
+                if (wasRunning) this.start();
+            }
+
+            setSpeed(speed) {
+                this.speed = Math.max(10, Math.min(2000, speed));
+                if (this.isRunning) {
+                    this.stop();
+                    this.start();
+                }
+                this.updateSpeedDisplay();
+            }
+
+            resizeGrid(width, height) {
+                if (this.validateGridSize(width, height)) {
+                    const wasRunning = this.isRunning;
+                    if (wasRunning) this.stop();
+                    
+                    this.grid.resize(width, height);
+                    this.generation = 0;
+                    this.renderer.updateGrid(this.grid);
+                    this.updateDisplay();
+                    this.showMessage(`グリッドサイズを${width}×${height}に変更しました`, 'success');
+                }
+            }
+
+            validateGridSize(width, height) {
+                if (isNaN(width) || isNaN(height)) {
+                    this.showMessage('グリッドサイズは数値で入力してください', 'error');
+                    return false;
+                }
+                if (width < 10 || width > 150 || height < 10 || height > 150) {
+                    this.showMessage('グリッドサイズは10〜150の範囲で入力してください', 'error');
+                    return false;
+                }
+                return true;
+            }
+
+            // サンプルパターンの実装
+            loadGlider() {
+                this.clear();
+                // グライダーパターン（移動する）
+                this.grid.setCell(1, 0, true);
+                this.grid.setCell(2, 1, true);
+                this.grid.setCell(0, 2, true);
+                this.grid.setCell(1, 2, true);
+                this.grid.setCell(2, 2, true);
+                this.renderer.render();
+            }
+
+            loadRPentomino() {
+                this.clear();
+                // Rペントミノパターン（メトセラ）
+                const centerX = Math.floor(this.grid.width / 2);
+                const centerY = Math.floor(this.grid.height / 2);
+                this.grid.setCell(centerX + 1, centerY, true);
+                this.grid.setCell(centerX + 2, centerY, true);
+                this.grid.setCell(centerX, centerY + 1, true);
+                this.grid.setCell(centerX + 1, centerY + 1, true);
+                this.grid.setCell(centerX + 1, centerY + 2, true);
+                this.renderer.render();
+            }
+
+            loadAcorn() {
+                this.clear();
+                // エイコーンパターン（メトセラ）
+                const centerX = Math.floor(this.grid.width / 2);
+                const centerY = Math.floor(this.grid.height / 2);
+                this.grid.setCell(centerX + 1, centerY, true);
+                this.grid.setCell(centerX + 3, centerY + 1, true);
+                this.grid.setCell(centerX, centerY + 2, true);
+                this.grid.setCell(centerX + 1, centerY + 2, true);
+                this.grid.setCell(centerX + 4, centerY + 2, true);
+                this.grid.setCell(centerX + 5, centerY + 2, true);
+                this.grid.setCell(centerX + 6, centerY + 2, true);
+                this.renderer.render();
+            }
+
+            loadGosperGun() {
+                this.clear();
+                // ゴスパーグライダーガン（グライダーを生成し続ける）
+                const startX = 5;
+                const startY = 5;
+                
+                // 左のブロック
+                this.grid.setCell(startX, startY + 4, true);
+                this.grid.setCell(startX, startY + 5, true);
+                this.grid.setCell(startX + 1, startY + 4, true);
+                this.grid.setCell(startX + 1, startY + 5, true);
+                
+                // 左の発射部
+                this.grid.setCell(startX + 10, startY + 4, true);
+                this.grid.setCell(startX + 10, startY + 5, true);
+                this.grid.setCell(startX + 10, startY + 6, true);
+                this.grid.setCell(startX + 11, startY + 3, true);
+                this.grid.setCell(startX + 11, startY + 7, true);
+                this.grid.setCell(startX + 12, startY + 2, true);
+                this.grid.setCell(startX + 12, startY + 8, true);
+                this.grid.setCell(startX + 13, startY + 2, true);
+                this.grid.setCell(startX + 13, startY + 8, true);
+                this.grid.setCell(startX + 14, startY + 5, true);
+                this.grid.setCell(startX + 15, startY + 3, true);
+                this.grid.setCell(startX + 15, startY + 7, true);
+                this.grid.setCell(startX + 16, startY + 4, true);
+                this.grid.setCell(startX + 16, startY + 5, true);
+                this.grid.setCell(startX + 16, startY + 6, true);
+                this.grid.setCell(startX + 17, startY + 5, true);
+                
+                // 右の受信部
+                this.grid.setCell(startX + 20, startY + 2, true);
+                this.grid.setCell(startX + 20, startY + 3, true);
+                this.grid.setCell(startX + 20, startY + 4, true);
+                this.grid.setCell(startX + 21, startY + 2, true);
+                this.grid.setCell(startX + 21, startY + 3, true);
+                this.grid.setCell(startX + 21, startY + 4, true);
+                this.grid.setCell(startX + 22, startY + 1, true);
+                this.grid.setCell(startX + 22, startY + 5, true);
+                this.grid.setCell(startX + 24, startY, true);
+                this.grid.setCell(startX + 24, startY + 1, true);
+                this.grid.setCell(startX + 24, startY + 5, true);
+                this.grid.setCell(startX + 24, startY + 6, true);
+                
+                // 右のブロック
+                this.grid.setCell(startX + 34, startY + 2, true);
+                this.grid.setCell(startX + 34, startY + 3, true);
+                this.grid.setCell(startX + 35, startY + 2, true);
+                this.grid.setCell(startX + 35, startY + 3, true);
+                
+                this.renderer.render();
+            }
+
+            loadPulsar() {
+                this.clear();
+                // パルサーパターン（周期3の振動子）
+                const centerX = Math.floor(this.grid.width / 2);
+                const centerY = Math.floor(this.grid.height / 2);
+                
+                // 上部
+                this.grid.setCell(centerX - 1, centerY - 6, true);
+                this.grid.setCell(centerX, centerY - 6, true);
+                this.grid.setCell(centerX + 1, centerY - 6, true);
+                this.grid.setCell(centerX - 1, centerY - 1, true);
+                this.grid.setCell(centerX, centerY - 1, true);
+                this.grid.setCell(centerX + 1, centerY - 1, true);
+                
+                // 下部
+                this.grid.setCell(centerX - 1, centerY + 1, true);
+                this.grid.setCell(centerX, centerY + 1, true);
+                this.grid.setCell(centerX + 1, centerY + 1, true);
+                this.grid.setCell(centerX - 1, centerY + 6, true);
+                this.grid.setCell(centerX, centerY + 6, true);
+                this.grid.setCell(centerX + 1, centerY + 6, true);
+                
+                // 左部
+                this.grid.setCell(centerX - 6, centerY - 1, true);
+                this.grid.setCell(centerX - 6, centerY, true);
+                this.grid.setCell(centerX - 6, centerY + 1, true);
+                this.grid.setCell(centerX - 1, centerY - 1, true);
+                this.grid.setCell(centerX - 1, centerY, true);
+                this.grid.setCell(centerX - 1, centerY + 1, true);
+                
+                // 右部
+                this.grid.setCell(centerX + 1, centerY - 1, true);
+                this.grid.setCell(centerX + 1, centerY, true);
+                this.grid.setCell(centerX + 1, centerY + 1, true);
+                this.grid.setCell(centerX + 6, centerY - 1, true);
+                this.grid.setCell(centerX + 6, centerY, true);
+                this.grid.setCell(centerX + 6, centerY + 1, true);
+                
+                this.renderer.render();
+            }
+
+            loadPentadecathlon() {
+                this.clear();
+                // ペンタデカスロンパターン（周期15の振動子）
+                const centerX = Math.floor(this.grid.width / 2);
+                const centerY = Math.floor(this.grid.height / 2);
+                
+                // 縦に並んだ10個のセル
+                for (let i = -4; i <= 5; i++) {
+                    this.grid.setCell(centerX, centerY + i, true);
+                }
+                
+                // 両端の装飾
+                this.grid.setCell(centerX - 1, centerY - 2, true);
+                this.grid.setCell(centerX + 1, centerY - 2, true);
+                this.grid.setCell(centerX - 1, centerY + 3, true);
+                this.grid.setCell(centerX + 1, centerY + 3, true);
+                
+                this.renderer.render();
+            }
+
+            loadDieHard() {
+                this.clear();
+                // ダイハードパターン（130世代で消滅）
+                const centerX = Math.floor(this.grid.width / 2);
+                const centerY = Math.floor(this.grid.height / 2);
+                
+                this.grid.setCell(centerX + 6, centerY, true);
+                this.grid.setCell(centerX, centerY + 1, true);
+                this.grid.setCell(centerX + 1, centerY + 1, true);
+                this.grid.setCell(centerX + 5, centerY + 2, true);
+                this.grid.setCell(centerX + 6, centerY + 2, true);
+                this.grid.setCell(centerX + 7, centerY + 2, true);
+                this.grid.setCell(centerX + 1, centerY + 1, true);
+                
+                this.renderer.render();
+            }
+
+            loadRandom() {
+                this.clear();
+                // ランダムパターン（約30%の確率でセルが生きている）
+                for (let y = 0; y < this.grid.height; y++) {
+                    for (let x = 0; x < this.grid.width; x++) {
+                        if (Math.random() < 0.3) {
+                            this.grid.setCell(x, y, true);
+                        }
+                    }
+                }
+                this.renderer.render();
+            }
+
+            updateButtons() {
+                document.getElementById('startBtn').disabled = this.isRunning;
+                document.getElementById('stopBtn').disabled = !this.isRunning;
+                document.getElementById('stepBtn').disabled = this.isRunning;
+                document.getElementById('resizeBtn').disabled = this.isRunning;
+                document.getElementById('widthInput').disabled = this.isRunning;
+                document.getElementById('heightInput').disabled = this.isRunning;
+            }
+
+            updateDisplay() {
+                document.getElementById('generationCount').textContent = this.generation;
+            }
+
+            updateSpeedDisplay() {
+                document.getElementById('speedValue').textContent = `${this.speed}ms`;
+                document.getElementById('currentSpeed').textContent = `${this.speed}ms`;
+                document.getElementById('speedSlider').value = this.speed;
+            }
+
+            showMessage(message, type) {
+                const messageArea = document.getElementById('messageArea');
+                messageArea.textContent = message;
+                messageArea.style.display = 'block';
+                
+                if (type === 'error') {
+                    messageArea.style.backgroundColor = '#f8d7da';
+                    messageArea.style.color = '#721c24';
+                    messageArea.style.border = '1px solid #f5c6cb';
+                } else if (type === 'success') {
+                    messageArea.style.backgroundColor = '#d4edda';
+                    messageArea.style.color = '#155724';
+                    messageArea.style.border = '1px solid #c3e6cb';
+                }
+                
+                setTimeout(() => {
+                    messageArea.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            const gameController = new GameController();
+            console.log('Conway\'s Game of Life initialized successfully');
+        });
+    </script>
+</body>
+</html>          
+  loadRPentomino() {
+                this.clear();
+                // Rペントミノパターン（メトセラ）
+                const centerX = Math.floor(this.grid.width / 2);
+                const centerY = Math.floor(this.grid.height / 2);
+                this.grid.setCell(centerX + 1, centerY, true);
+                this.grid.setCell(centerX + 2, centerY, true);
+                this.grid.setCell(centerX, centerY + 1, true);
+                this.grid.setCell(centerX + 1, centerY + 1, true);
+                this.grid.setCell(centerX + 1, centerY + 2, true);
+                this.renderer.render();
+            }
+
+            loadAcorn() {
+                this.clear();
+                // エイコーンパターン（メトセラ）
+                const centerX = Math.floor(this.grid.width / 2);
+                const centerY = Math.floor(this.grid.height / 2);
+                this.grid.setCell(centerX + 1, centerY, true);
+                this.grid.setCell(centerX + 3, centerY + 1, true);
+                this.grid.setCell(centerX, centerY + 2, true);
+                this.grid.setCell(centerX + 1, centerY + 2, true);
+                this.grid.setCell(centerX + 4, centerY + 2, true);
+                this.grid.setCell(centerX + 5, centerY + 2, true);
+                this.grid.setCell(centerX + 6, centerY + 2, true);
+                this.renderer.render();
+            }
+
+            loadGosperGun() {
+                this.clear();
+                // ゴスパーグライダーガン（グライダーを生成し続ける）
+                const startX = 5;
+                const startY = 5;
+                
+                // 左のブロック
+                this.grid.setCell(startX, startY + 4, true);
+                this.grid.setCell(startX, startY + 5, true);
+                this.grid.setCell(startX + 1, startY + 4, true);
+                this.grid.setCell(startX + 1, startY + 5, true);
+                
+                // 左の発射部
+                this.grid.setCell(startX + 10, startY + 4, true);
+                this.grid.setCell(startX + 10, startY + 5, true);
+                this.grid.setCell(startX + 10, startY + 6, true);
+                this.grid.setCell(startX + 11, startY + 3, true);
+                this.grid.setCell(startX + 11, startY + 7, true);
+                this.grid.setCell(startX + 12, startY + 2, true);
+                this.grid.setCell(startX + 12, startY + 8, true);
+                this.grid.setCell(startX + 13, startY + 2, true);
+                this.grid.setCell(startX + 13, startY + 8, true);
+                this.grid.setCell(startX + 14, startY + 5, true);
+                this.grid.setCell(startX + 15, startY + 3, true);
+                this.grid.setCell(startX + 15, startY + 7, true);
+                this.grid.setCell(startX + 16, startY + 4, true);
+                this.grid.setCell(startX + 16, startY + 5, true);
+                this.grid.setCell(startX + 16, startY + 6, true);
+                this.grid.setCell(startX + 17, startY + 5, true);
+                
+                // 右の受信部
+                this.grid.setCell(startX + 20, startY + 2, true);
+                this.grid.setCell(startX + 20, startY + 3, true);
+                this.grid.setCell(startX + 20, startY + 4, true);
+                this.grid.setCell(startX + 21, startY + 2, true);
+                this.grid.setCell(startX + 21, startY + 3, true);
+                this.grid.setCell(startX + 21, startY + 4, true);
+                this.grid.setCell(startX + 22, startY + 1, true);
+                this.grid.setCell(startX + 22, startY + 5, true);
+                this.grid.setCell(startX + 24, startY, true);
+                this.grid.setCell(startX + 24, startY + 1, true);
+                this.grid.setCell(startX + 24, startY + 5, true);
+                this.grid.setCell(startX + 24, startY + 6, true);
+                
+                // 右のブロック
+                this.grid.setCell(startX + 34, startY + 2, true);
+                this.grid.setCell(startX + 34, startY + 3, true);
+                this.grid.setCell(startX + 35, startY + 2, true);
+                this.grid.setCell(startX + 35, startY + 3, true);
+                
+                this.renderer.render();
+            }
+
+            loadPulsar() {
+                this.clear();
+                // パルサーパターン（周期3の振動子）
+                const centerX = Math.floor(this.grid.width / 2);
+                const centerY = Math.floor(this.grid.height / 2);
+                
+                // 上部
+                this.grid.setCell(centerX - 1, centerY - 6, true);
+                this.grid.setCell(centerX, centerY - 6, true);
+                this.grid.setCell(centerX + 1, centerY - 6, true);
+                this.grid.setCell(centerX - 1, centerY - 1, true);
+                this.grid.setCell(centerX, centerY - 1, true);
+                this.grid.setCell(centerX + 1, centerY - 1, true);
+                
+                // 下部
+                this.grid.setCell(centerX - 1, centerY + 1, true);
+                this.grid.setCell(centerX, centerY + 1, true);
+                this.grid.setCell(centerX + 1, centerY + 1, true);
+                this.grid.setCell(centerX - 1, centerY + 6, true);
+                this.grid.setCell(centerX, centerY + 6, true);
+                this.grid.setCell(centerX + 1, centerY + 6, true);
+                
+                // 左部
+                this.grid.setCell(centerX - 6, centerY - 1, true);
+                this.grid.setCell(centerX - 6, centerY, true);
+                this.grid.setCell(centerX - 6, centerY + 1, true);
+                this.grid.setCell(centerX - 1, centerY - 1, true);
+                this.grid.setCell(centerX - 1, centerY, true);
+                this.grid.setCell(centerX - 1, centerY + 1, true);
+                
+                // 右部
+                this.grid.setCell(centerX + 1, centerY - 1, true);
+                this.grid.setCell(centerX + 1, centerY, true);
+                this.grid.setCell(centerX + 1, centerY + 1, true);
+                this.grid.setCell(centerX + 6, centerY - 1, true);
+                this.grid.setCell(centerX + 6, centerY, true);
+                this.grid.setCell(centerX + 6, centerY + 1, true);
+                
+                this.renderer.render();
+            }
+
+            loadPentadecathlon() {
+                this.clear();
+                // ペンタデカスロンパターン（周期15の振動子）
+                const centerX = Math.floor(this.grid.width / 2);
+                const centerY = Math.floor(this.grid.height / 2);
+                
+                // 縦に並んだ10個のセル
+                for (let i = -4; i <= 5; i++) {
+                    this.grid.setCell(centerX, centerY + i, true);
+                }
+                
+                // 両端の装飾
+                this.grid.setCell(centerX - 1, centerY - 2, true);
+                this.grid.setCell(centerX + 1, centerY - 2, true);
+                this.grid.setCell(centerX - 1, centerY + 3, true);
+                this.grid.setCell(centerX + 1, centerY + 3, true);
+                
+                this.renderer.render();
+            }
+
+            loadDieHard() {
+                this.clear();
+                // ダイハードパターン（130世代で消滅）
+                const centerX = Math.floor(this.grid.width / 2);
+                const centerY = Math.floor(this.grid.height / 2);
+                
+                this.grid.setCell(centerX + 6, centerY, true);
+                this.grid.setCell(centerX, centerY + 1, true);
+                this.grid.setCell(centerX + 1, centerY + 1, true);
+                this.grid.setCell(centerX + 5, centerY + 2, true);
+                this.grid.setCell(centerX + 6, centerY + 2, true);
+                this.grid.setCell(centerX + 7, centerY + 2, true);
+                this.grid.setCell(centerX + 1, centerY + 1, true);
+                
+                this.renderer.render();
+            }
+
+            loadRandom() {
+                this.clear();
+                // ランダムパターン（約30%の確率でセルが生きている）
+                for (let y = 0; y < this.grid.height; y++) {
+                    for (let x = 0; x < this.grid.width; x++) {
+                        if (Math.random() < 0.3) {
+                            this.grid.setCell(x, y, true);
+                        }
+                    }
+                }
+                this.renderer.render();
+            }
+
+            updateButtons() {
+                document.getElementById('startBtn').disabled = this.isRunning;
+                document.getElementById('stopBtn').disabled = !this.isRunning;
+                document.getElementById('stepBtn').disabled = this.isRunning;
+                document.getElementById('resizeBtn').disabled = this.isRunning;
+                document.getElementById('widthInput').disabled = this.isRunning;
+                document.getElementById('heightInput').disabled = this.isRunning;
+            }
+
+            updateDisplay() {
+                document.getElementById('generationCount').textContent = this.generation;
+            }
+
+            updateSpeedDisplay() {
+                document.getElementById('speedValue').textContent = `${this.speed}ms`;
+                document.getElementById('currentSpeed').textContent = `${this.speed}ms`;
+                document.getElementById('speedSlider').value = this.speed;
+            }
+
+            showMessage(message, type) {
+                const messageArea = document.getElementById('messageArea');
+                messageArea.textContent = message;
+                messageArea.style.display = 'block';
+                
+                if (type === 'error') {
+                    messageArea.style.backgroundColor = '#f8d7da';
+                    messageArea.style.color = '#721c24';
+                    messageArea.style.border = '1px solid #f5c6cb';
+                } else if (type === 'success') {
+                    messageArea.style.backgroundColor = '#d4edda';
+                    messageArea.style.color = '#155724';
+                    messageArea.style.border = '1px solid #c3e6cb';
+                }
+                
+                setTimeout(() => {
+                    messageArea.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            const gameController = new GameController();
+            console.log('Conway\'s Game of Life initialized successfully');
+        });
+    </script>
+</body>
+</html>

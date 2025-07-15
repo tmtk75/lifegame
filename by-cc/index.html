@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Game - Canvas</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Life Game (Canvas)</h1>
+    <div id="controls">
+        <button id="startPauseBtn">Start</button>
+        <button id="resetBtn">Reset</button>
+        <span>Generation: <span id="generation">0</span></span>
+    </div>
+    <div id="settings">
+        <label for="widthInput">Width:</label>
+        <input type="number" id="widthInput" value="256" min="10">
+        <label for="heightInput">Height:</label>
+        <input type="number" id="heightInput" value="256" min="10">
+        <button id="applySizeBtn">Apply Size</button>
+    </div>
+    <div id="patterns">
+        <label for="patternSelect">Patterns:</label>
+        <select id="patternSelect">
+            <option value="glider">Glider</option>
+            <option value="gosperGliderGun">Gosper Glider Gun</option>
+            <option value="pentaDecathlon">Penta-decathlon</option>
+        </select>
+        <button id="placePatternBtn">Place Pattern</button>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <script src="canvas.js"></script>
+</body>
+</html>
